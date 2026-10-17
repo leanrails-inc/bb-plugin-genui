@@ -103,6 +103,14 @@ To try it, ask an agent something with a shape: *"Compare Postgres, SQLite and D
 bb genui ask "Plan a two-day trip to Lisbon"
 ```
 
+Agents offer buttons, forms and follow-up questions on their own by default. If you want the visuals without the prompts, switch the *Interaction style* setting to `visual-only`:
+
+```sh
+bb plugin config genui set interactionStyle visual-only
+```
+
+Agents then still show tables, charts, diagrams and reports as UI, but use FollowUps, Button, Form, Choice, Radio, Checklist, OptionCards, Decision and Plan only when they need your answer or approval before they can continue. Sessions started after the change pick it up.
+
 ## What it costs, and what it touches
 
 - **Tokens.** Sessions whose replies you read get about 16 KB of instructions (roughly 4,000 tokens) that teach the components. Worker threads that another agent spawns get none. A UI costs no extra model call: it is part of the reply.
