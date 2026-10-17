@@ -27,6 +27,17 @@ The internals behind [the README](../README.md): how agents learn the language, 
      calculator example stopped being followed when it sat in an earlier
      section. While web lookups are off, `AGENT_INSTRUCTIONS_WEB_OFF` swaps
      the Map example for a line saying so.
+   - The `interactionStyle` setting picks between three versions of the last
+     two sections. `proactive` (the default) is the text above.
+     `visual-only` (`*_VISUAL_ONLY`) rewrites it so the interactive inputs,
+     FollowUps, Plan and Decision are used only when the agent needs an
+     answer or approval to continue, and drops the examples that model
+     unprompted buttons, forms, plans and decisions. Each rewrite throws when
+     its source text is missing, so a wording change fails the tests.
+     `minimal` (`*_MINIMAL`) is a short text of its own instead of a
+     rewrite: plain-text replies, one small visual only when it explains
+     better than words, no input or action components, questions in plain
+     text.
    BB refuses a tool whose instructions pass 4,096 characters (the plugin
    then fails to reload) and truncates the other sections there;
    `instructions.test.ts` fails the build past that and compiles every

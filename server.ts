@@ -45,7 +45,15 @@ import {
   type EnvironmentsResult,
 } from "./core/project";
 import { examplesReport } from "./examples";
-import { AGENT_INSTRUCTIONS, AGENT_INSTRUCTIONS_WEB_OFF, CODE_WORK_INSTRUCTIONS, UI_REFERENCE, UI_REFERENCE_MORE } from "./instructions";
+import {
+  agentInstructions,
+  codeWorkInstructions,
+  INSTRUCTION_SETTINGS,
+  parseInteractionStyle,
+  UI_REFERENCE,
+  UI_REFERENCE_MORE,
+  type InteractionStyle,
+} from "./instructions";
 import { foundImageSchema } from "./web/commons";
 import { locatedSchema } from "./web/geocode";
 import { createWebLookups, MAX_TILE_ZOOM } from "./web/lookups";
@@ -203,6 +211,12 @@ export default async function plugin(bb: BbPluginApi) {
   };
   const project = createProjectSource(bb);
   const environments = createEnvironmentsSource(bb.sdk);
+  // configure can't wait, so the saved setting is loaded here, before configure is registered.
+  const instructionSettings = bb.settings.define(INSTRUCTION_SETTINGS);
+  let style: InteractionStyle = parseInteractionStyle((await instructionSettings.get()).interactionStyle);
+  instructionSettings.onChange((next) => {
+    style = parseInteractionStyle(next.interactionStyle);
+  });
 
   bb.agents.registerTool({
     name: "check_ui",
@@ -257,10 +271,9 @@ export default async function plugin(bb: BbPluginApi) {
     if (!forPerson) return { tools: [], skills: [] };
     personThreads.add(context.thread.id);
     if (personThreads.size > MAX_PERSON_THREADS) personThreads.delete(personThreads.values().next().value!);
-    const instructions = web.isOn() ? AGENT_INSTRUCTIONS : AGENT_INSTRUCTIONS_WEB_OFF;
-    return { tools: ["check_ui", "ui_examples"], skills: [], instructions };
+    return { tools: ["check_ui", "ui_examples"], skills: [], instructions: agentInstructions(style, web.isOn()) };
   });
-  bb.agents.contributeInstructions(({ threadId }) => (personThreads.has(threadId) ? CODE_WORK_INSTRUCTIONS : null));
+  bb.agents.contributeInstructions(({ threadId }) => (personThreads.has(threadId) ? codeWorkInstructions(style) : null));
 
   bb.rpc.register(rpcContract, {
     async get_ui({ id }) {
