@@ -1,3 +1,4 @@
+// Modified by leanrails-inc (2026): interactionStyle setting. Changed from ComicBit/bb-plugin-genui (Apache-2.0 section 4(b)).
 // What agents are told about ```ui blocks, in the three sections BB adds to
 // sessions whose replies a person reads (see server.ts). BB appends tool
 // sections before plugin sections, so:

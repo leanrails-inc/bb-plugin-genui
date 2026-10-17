@@ -1,3 +1,4 @@
+// Modified by leanrails-inc (2026): interactionStyle setting. Changed from ComicBit/bb-plugin-genui (Apache-2.0 section 4(b)).
 import { describe, expect, it } from "vitest";
 import { ACTIONS, COMPONENTS } from "./core/catalog";
 import { collectLoads, compile, dataKey, evaluate, formatDiagnostics, initialState, type LoadedData } from "./core";

@@ -305,3 +305,5 @@ bb genui ask "Plan a day in Lisbon"          # try a prompt in a subthread that 
 ```
 
 Instruction changes apply to provider sessions started after the reload.
+
+> Modified by leanrails-inc (2026): interactionStyle setting (`instructions.ts`, `server.ts`, `instructions.test.ts`, this file). Changed from ComicBit/bb-plugin-genui (Apache-2.0 section 4(b)).

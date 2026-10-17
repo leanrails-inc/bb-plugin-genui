@@ -1,3 +1,4 @@
+// Modified by leanrails-inc (2026): interactionStyle setting. Changed from ComicBit/bb-plugin-genui (Apache-2.0 section 4(b)).
 // bb-plugin-genui backend. Agents write ```ui and ```app blocks straight into
 // their replies, so a UI costs no extra model call. The backend:
 // - decides which sessions are told about the blocks, in three sections: the
