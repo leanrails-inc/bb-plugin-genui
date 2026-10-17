@@ -10,7 +10,7 @@
 
 </div>
 
-> **Fork notice.** This is leanrails-inc's modified fork of [ComicBit/bb-plugin-genui](https://github.com/ComicBit/bb-plugin-genui) (Apache-2.0). Change: an `interactionStyle` setting (`proactive`, the upstream default, or `visual-only`), in `instructions.ts`, `server.ts`, `instructions.test.ts`, this README and `docs/architecture.md`. Install the fork with `bb plugin install git:https://github.com/leanrails-inc/bb-plugin-genui.git@main --yes`.
+> **Fork notice.** This is leanrails-inc's modified fork of [ComicBit/bb-plugin-genui](https://github.com/ComicBit/bb-plugin-genui) (Apache-2.0). Change: an `interactionStyle` setting (`proactive`, the upstream default, `visual-only` or `minimal`), in `instructions.ts`, `server.ts`, `instructions.test.ts`, this README and `docs/architecture.md`. Install the fork with `bb plugin install git:https://github.com/leanrails-inc/bb-plugin-genui.git@main --yes`.
 
 ---
 
@@ -111,7 +111,9 @@ Agents offer buttons, forms and follow-up questions on their own by default. If 
 bb plugin config genui set interactionStyle visual-only
 ```
 
-Agents then still show tables, charts, diagrams and reports as UI, but use FollowUps, Button, Form, Choice, Radio, Checklist, OptionCards, Decision and Plan only when they need your answer or approval before they can continue. Sessions started after the change pick it up.
+Agents then still show tables, charts, diagrams and reports as UI, but use FollowUps, Button, Form, Choice, Radio, Checklist, OptionCards, Decision and Plan only when they need your answer or approval before they can continue.
+
+For less UI still, set it to `minimal`: agents reply in short plain text, write a small UI (one diagram, table, chart, code or test result) only when it explains better than words, never use inputs, buttons, forms, plans or decisions, and ask questions as plain text you answer by typing. Sessions started after the change pick up the setting.
 
 ## What it costs, and what it touches
 

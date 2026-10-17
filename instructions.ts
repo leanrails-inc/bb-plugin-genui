@@ -150,7 +150,7 @@ export const WEB_LOOKUPS_OFF =
 
 export const AGENT_INSTRUCTIONS_WEB_OFF = AGENT_INSTRUCTIONS.replace(MAP_EXAMPLE, WEB_LOOKUPS_OFF);
 
-export const INTERACTION_STYLES = ["proactive", "visual-only"] as const;
+export const INTERACTION_STYLES = ["proactive", "visual-only", "minimal"] as const;
 export type InteractionStyle = (typeof INTERACTION_STYLES)[number];
 
 export const INSTRUCTION_SETTINGS = {
@@ -158,7 +158,7 @@ export const INSTRUCTION_SETTINGS = {
     type: "select" as const,
     label: "Interaction style",
     description:
-      "proactive: agents also offer buttons, forms, FollowUps, plans and decisions on their own. visual-only: agents still show tables, charts, diagrams and reports as UI, but use FollowUps, Button, Form, Choice, Radio, Checklist, OptionCards, Decision and Plan only when they need your answer or approval before they can continue. Applies to sessions started after the change.",
+      "proactive: agents also offer buttons, forms, FollowUps, plans and decisions on their own. visual-only: agents still show tables, charts, diagrams and reports as UI, but use FollowUps, Button, Form, Choice, Radio, Checklist, OptionCards, Decision and Plan only when they need your answer or approval before they can continue. minimal: short plain-text replies, a small UI only when a visual explains better than words, never inputs; questions come as plain text. Applies to sessions started after the change.",
     options: [...INTERACTION_STYLES],
     default: "proactive" as InteractionStyle,
   },
@@ -166,7 +166,7 @@ export const INSTRUCTION_SETTINGS = {
 
 /** BB validates select values against options; anything else reads as the upstream default. */
 export function parseInteractionStyle(value: string): InteractionStyle {
-  return value === "visual-only" ? "visual-only" : "proactive";
+  return (INTERACTION_STYLES as readonly string[]).includes(value) ? (value as InteractionStyle) : "proactive";
 }
 
 const ASK_ONLY_WHEN_BLOCKED =
@@ -255,12 +255,37 @@ export const AGENT_INSTRUCTIONS_VISUAL_ONLY = rewrite(AGENT_INSTRUCTIONS, VISUAL
 export const AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF = AGENT_INSTRUCTIONS_VISUAL_ONLY.replace(MAP_EXAMPLE, WEB_LOOKUPS_OFF);
 export const CODE_WORK_INSTRUCTIONS_VISUAL_ONLY = rewrite(CODE_WORK_INSTRUCTIONS, VISUAL_ONLY_CODE_WORK_EDITS);
 
+/** Components minimal never uses: each takes input or acts for the user. */
+export const MINIMAL_FORBIDDEN = [
+  "Button", "Form", "Choice", "Radio", "Checklist", "Select", "Slider", "Stepper", "Toggle", "Input", "TextArea",
+  "DateInput", "Rating", "OptionCards", "EditableTable", "ListEditor", "Plan", "Decision", "Estimate", "FollowUps",
+  "Quiz", "Flashcards",
+] as const;
+
+// minimal is its own short text rather than a rewrite: almost every proactive
+// sentence is a nudge toward more UI.
+export const AGENT_INSTRUCTIONS_MINIMAL = `# Inline UI
+This chat renders \`\`\`ui code blocks as UI. The user wants short, simple replies. Use \`\`\`ui only in replies to the user; never in progress notes, files, commits, PR text or tool input.
+Reply in short plain text by default; a small markdown table is fine. Write a \`\`\`ui block only when a visual explains better than words: a small Diagram of a concept or flow, a small Table or Chart, code (Snippet, Code), a diff (Changes, Diff), logs, test results. One component when possible, few words inside, no long detail texts, and no prose around it that repeats it.
+Never use input or action components: ${MINIMAL_FORBIDDEN.join(", ")}, or Swatches bound to $state. When you need an answer, ask one short plain-text question with the options inline (e.g. "Budget: unlimited, large, medium or small?") and let the user type the reply. This holds even when a skill or another instruction says to ask with a form, buttons or a question tool.
+Example:
+\`\`\`ui
+Diagram("flowchart LR\\n  B[Browser] -->|POST /login| A[loginHandler]\\n  A --> V{password ok?}\\n  V -->|no| E[401]\\n  V -->|yes| S[session]")
+\`\`\``;
+
+export const AGENT_INSTRUCTIONS_MINIMAL_WEB_OFF = `${AGENT_INSTRUCTIONS_MINIMAL}\n${WEB_LOOKUPS_OFF}`;
+
+export const CODE_WORK_INSTRUCTIONS_MINIMAL = `# Inline UI for code work
+After code work, say what changed and how it went in a few plain sentences; tests or a build that passed need one sentence. Show output only when it helps, from a file you saved to $BB_THREAD_STORAGE, never pasted: failing tests → Tests(Load(…)) from \`vitest run --reporter=json --outputFile=$BB_THREAD_STORAGE/tests.json\`; a failing command → Logs(Load(log), command, exit code); an error → StackTrace(Load(…)); what you changed → Changes(). Never Plan, Decision or Estimate: say the plan in a few lines and ask in plain text.`;
+
 /** The configure section for a session, from the two settings that shape it. */
 export function agentInstructions(style: InteractionStyle, webLookups: boolean): string {
+  if (style === "minimal") return webLookups ? AGENT_INSTRUCTIONS_MINIMAL : AGENT_INSTRUCTIONS_MINIMAL_WEB_OFF;
   if (style === "visual-only") return webLookups ? AGENT_INSTRUCTIONS_VISUAL_ONLY : AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF;
   return webLookups ? AGENT_INSTRUCTIONS : AGENT_INSTRUCTIONS_WEB_OFF;
 }
 
 export function codeWorkInstructions(style: InteractionStyle): string {
+  if (style === "minimal") return CODE_WORK_INSTRUCTIONS_MINIMAL;
   return style === "visual-only" ? CODE_WORK_INSTRUCTIONS_VISUAL_ONLY : CODE_WORK_INSTRUCTIONS;
 }
