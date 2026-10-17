@@ -236,7 +236,7 @@ Card("Caching options", [Table(["Option", "Speed"], [["In memory", Badge("fastes
 const VISUAL_ONLY_CODE_WORK_EDITS = [
   [
     "- a plan for work not started (asked for one, or you want approval) → Plan(steps)\n- a choice between options → Decision(options, criteria); how long",
-    "- a plan → Plan(steps), only when the user asked for one or you need their approval before starting\n- options to compare → Decision(options, criteria), only when the user asked for a comparison or must choose before you continue; how long",
+    "- a plan → Plan(steps), only when you need the user's approval before starting; a plan to read is Steps or Calendar\n- options to compare → Decision(options, criteria), only when the user must choose before you continue; a comparison they asked for is a Table or Chart; how long",
   ],
   [
     `\`\`\`ui

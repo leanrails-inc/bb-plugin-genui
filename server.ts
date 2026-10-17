@@ -211,12 +211,9 @@ export default async function plugin(bb: BbPluginApi) {
   };
   const project = createProjectSource(bb);
   const environments = createEnvironmentsSource(bb.sdk);
-  // configure can't wait, so it reads the setting as last seen (like web.isOn()).
+  // configure can't wait, so the saved setting is loaded here, before configure is registered.
   const instructionSettings = bb.settings.define(INSTRUCTION_SETTINGS);
-  let style: InteractionStyle = INSTRUCTION_SETTINGS.interactionStyle.default;
-  void instructionSettings.get().then((current) => {
-    style = parseInteractionStyle(current.interactionStyle);
-  });
+  let style: InteractionStyle = parseInteractionStyle((await instructionSettings.get()).interactionStyle);
   instructionSettings.onChange((next) => {
     style = parseInteractionStyle(next.interactionStyle);
   });
