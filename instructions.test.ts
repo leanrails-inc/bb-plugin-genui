@@ -1,3 +1,4 @@
+// Modified by leanrails-inc (2026): interactionStyle setting. Changed from ComicBit/bb-plugin-genui (Apache-2.0 section 4(b)).
 import { describe, expect, it } from "vitest";
 import { ACTIONS, COMPONENTS } from "./core/catalog";
 import { collectLoads, compile, dataKey, evaluate, formatDiagnostics, initialState, type LoadedData } from "./core";
@@ -16,6 +17,11 @@ import {
   UI_REFERENCE_MORE,
   WEB_LOOKUPS_OFF,
 } from "./instructions";
+import {
+  UPSTREAM_AGENT_INSTRUCTIONS,
+  UPSTREAM_AGENT_INSTRUCTIONS_WEB_OFF,
+  UPSTREAM_CODE_WORK_INSTRUCTIONS,
+} from "./instructions.upstream.fixture";
 
 describe("agent instructions", () => {
   // BB refuses a tool whose instructions pass 4096 characters (the plugin then
@@ -68,9 +74,9 @@ describe("interactionStyle", () => {
     expect(INSTRUCTION_SETTINGS.interactionStyle.options).toEqual(["proactive", "visual-only"]);
     expect(parseInteractionStyle("proactive")).toBe("proactive");
     expect(parseInteractionStyle("anything else")).toBe("proactive");
-    expect(agentInstructions("proactive", true)).toBe(AGENT_INSTRUCTIONS);
-    expect(agentInstructions("proactive", false)).toBe(AGENT_INSTRUCTIONS_WEB_OFF);
-    expect(codeWorkInstructions("proactive")).toBe(CODE_WORK_INSTRUCTIONS);
+    expect(agentInstructions("proactive", true)).toBe(UPSTREAM_AGENT_INSTRUCTIONS);
+    expect(agentInstructions("proactive", false)).toBe(UPSTREAM_AGENT_INSTRUCTIONS_WEB_OFF);
+    expect(codeWorkInstructions("proactive")).toBe(UPSTREAM_CODE_WORK_INSTRUCTIONS);
   });
 
   it("visual-only picks its own sections", () => {
@@ -86,6 +92,8 @@ describe("interactionStyle", () => {
     expect(text).not.toContain("To let the user pick, give buttons");
     expect(text).not.toContain("picture options → OptionCards");
     expect(text).not.toContain("or you want approval) → Plan");
+    expect(text).not.toContain("asked for a comparison");
+    expect(text).not.toContain("the user asked for one");
     const examples = [...text.matchAll(/```ui\n([\s\S]*?)\n```/g)].map((match) => match[1]).join("\n");
     for (const name of ["FollowUps", "Button", "Form", "Choice", "Radio", "Checklist", "OptionCards", "Decision", "Plan"]) {
       expect(examples, name).not.toContain(`${name}(`);
@@ -96,7 +104,8 @@ describe("interactionStyle", () => {
     expect(AGENT_INSTRUCTIONS_VISUAL_ONLY).toContain("Write ```ui instead of a markdown table");
     expect(AGENT_INSTRUCTIONS_VISUAL_ONLY).toContain("Ask only when you can't continue without the user's answer or approval");
     expect(AGENT_INSTRUCTIONS_VISUAL_ONLY).toContain("Before you send a reply: any markdown table");
-    expect(CODE_WORK_INSTRUCTIONS_VISUAL_ONLY).toContain("only when the user asked for one or you need their approval");
+    expect(CODE_WORK_INSTRUCTIONS_VISUAL_ONLY).toContain("Plan(steps), only when you need the user's approval before starting");
+    expect(CODE_WORK_INSTRUCTIONS_VISUAL_ONLY).toContain("Decision(options, criteria), only when the user must choose before you continue; a comparison they asked for is a Table or Chart");
     for (const name of ["Tests", "Logs", "Findings", "Coverage", "Changes", "Estimate", "Diagram", "Steps"]) {
       expect(`${AGENT_INSTRUCTIONS_VISUAL_ONLY}\n${CODE_WORK_INSTRUCTIONS_VISUAL_ONLY}`, name).toContain(name);
     }

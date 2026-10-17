@@ -1,3 +1,4 @@
+// Modified by leanrails-inc (2026): interactionStyle setting. Changed from ComicBit/bb-plugin-genui (Apache-2.0 section 4(b)).
 // bb-plugin-genui backend. Agents write ```ui and ```app blocks straight into
 // their replies, so a UI costs no extra model call. The backend:
 // - decides which sessions are told about the blocks, in three sections: the
@@ -211,12 +212,9 @@ export default async function plugin(bb: BbPluginApi) {
   };
   const project = createProjectSource(bb);
   const environments = createEnvironmentsSource(bb.sdk);
-  // configure can't wait, so it reads the setting as last seen (like web.isOn()).
+  // configure can't wait, so the saved setting is loaded here, before configure is registered.
   const instructionSettings = bb.settings.define(INSTRUCTION_SETTINGS);
-  let style: InteractionStyle = INSTRUCTION_SETTINGS.interactionStyle.default;
-  void instructionSettings.get().then((current) => {
-    style = parseInteractionStyle(current.interactionStyle);
-  });
+  let style: InteractionStyle = parseInteractionStyle((await instructionSettings.get()).interactionStyle);
   instructionSettings.onChange((next) => {
     style = parseInteractionStyle(next.interactionStyle);
   });
