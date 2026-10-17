@@ -148,3 +148,118 @@ export const WEB_LOOKUPS_OFF =
   "Web lookups are off in this plugin's settings: ImageSearch, Map, Gallery {query} and https images won't load; use workspace files.";
 
 export const AGENT_INSTRUCTIONS_WEB_OFF = AGENT_INSTRUCTIONS.replace(MAP_EXAMPLE, WEB_LOOKUPS_OFF);
+
+export const INTERACTION_STYLES = ["proactive", "visual-only"] as const;
+export type InteractionStyle = (typeof INTERACTION_STYLES)[number];
+
+export const INSTRUCTION_SETTINGS = {
+  interactionStyle: {
+    type: "select" as const,
+    label: "Interaction style",
+    description:
+      "proactive: agents also offer buttons, forms, FollowUps, plans and decisions on their own. visual-only: agents still show tables, charts, diagrams and reports as UI, but use FollowUps, Button, Form, Choice, Radio, Checklist, OptionCards, Decision and Plan only when they need your answer or approval before they can continue. Applies to sessions started after the change.",
+    options: [...INTERACTION_STYLES],
+    default: "proactive" as InteractionStyle,
+  },
+};
+
+/** BB validates select values against options; anything else reads as the upstream default. */
+export function parseInteractionStyle(value: string): InteractionStyle {
+  return value === "visual-only" ? "visual-only" : "proactive";
+}
+
+const ASK_ONLY_WHEN_BLOCKED =
+  "Ask only when you can't continue without the user's answer or approval; then one Button per option, or one Form (Choice, Radio, Checklist, OptionCards inside) for several questions; never a question tool or a numbered list. Otherwise end with the answer: no buttons, forms, FollowUps or offers of next steps.";
+
+/** Replaces each `from` in `text`; throws when one is missing, so an upstream wording change fails the tests instead of keeping the nudge. */
+function rewrite(text: string, edits: readonly (readonly [from: string, to: string])[]): string {
+  return edits.reduce((result, [from, to]) => {
+    if (!result.includes(from)) throw new Error(`visual-only rewrite: missing ${JSON.stringify(from.slice(0, 60))}`);
+    return result.replace(from, to);
+  }, text);
+}
+
+// visual-only keeps every visualization rule and example; it drops the
+// examples that model unprompted buttons and forms, and narrows when the
+// interactive and Plan/Decision components are used.
+const VISUAL_ONLY_AGENT_EDITS = [
+  [
+    "To let the user pick, give buttons; to ask more than one question, one Form; never a question tool or a numbered list.",
+    ASK_ONLY_WHEN_BLOCKED,
+  ],
+  ["; colours → Swatches; picture options → OptionCards.", "; colours → Swatches."],
+  [" When the next steps are questions, end with FollowUps.", ""],
+  [
+    `$seats = 10
+$plan = "Pro"
+price = $plan == "Pro" ? 29 : 12
+Card("Estimate", [
+  Row([Choice($plan, ["Basic", "Pro"]), Slider($seats, 1, 50, label: "Seats")]),
+  Metric("Total", "$" + fmt(price * $seats)),
+  Button("Go with " + $plan, Send("Go with " + $plan), variant: "primary")
+])`,
+    `$seats = 10
+$price = 29
+Card("Estimate", [
+  Row([Slider($seats, 1, 50, label: "Seats"), Slider($price, 5, 50, label: "Price per seat")]),
+  Metric("Total", "$" + fmt($price * $seats))
+])`,
+  ],
+  [
+    `\`\`\`ui
+Card("Caching options", [
+  Table(["Option", "Speed"], [["In memory", Badge("fastest", tone: "good")], ["Redis", Badge("fast", tone: "good")]]),
+  Button("Use in memory"),
+  Button("Use Redis")
+])
+\`\`\`
+\`\`\`ui
+$channels = []
+$notes = ""
+Card("A few questions first", [Form([
+  Checklist($channels, ["Email", "Push"], label: "Which channels?"),
+  TextArea($notes, label: "Anything else?")
+], submit: "Send answers")])
+\`\`\`
+`,
+    `\`\`\`ui
+Card("Caching options", [Table(["Option", "Speed"], [["In memory", Badge("fastest", tone: "good")], ["Redis", Badge("fast", tone: "good")]])])
+\`\`\`
+`,
+  ],
+  [
+    "becomes ```ui.",
+    "becomes ```ui, and it has no buttons, forms or FollowUps unless you need the user's answer to continue.",
+  ],
+] as const;
+
+const VISUAL_ONLY_CODE_WORK_EDITS = [
+  [
+    "- a plan for work not started (asked for one, or you want approval) → Plan(steps)\n- a choice between options → Decision(options, criteria); how long",
+    "- a plan → Plan(steps), only when the user asked for one or you need their approval before starting\n- options to compare → Decision(options, criteria), only when the user asked for a comparison or must choose before you continue; how long",
+  ],
+  [
+    `\`\`\`ui
+Card("Audit log for admin actions", [Plan([{title: "Append-only audit table", files: ["db/migrations/0012_audit.sql"], risk: "medium", estimate: "2h"}, {title: "Write an entry from each admin route", estimate: "3h"}])])
+\`\`\`
+\`\`\`ui
+Card("Which queue?", [Decision([{name: "pg-boss", scores: [4, 5], pros: ["Uses our Postgres"]}, {name: "BullMQ", scores: [5, 2], cons: ["Needs Redis"]}], ["Throughput", "Ops cost"])])
+\`\`\`
+`,
+    "",
+  ],
+] as const;
+
+export const AGENT_INSTRUCTIONS_VISUAL_ONLY = rewrite(AGENT_INSTRUCTIONS, VISUAL_ONLY_AGENT_EDITS);
+export const AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF = AGENT_INSTRUCTIONS_VISUAL_ONLY.replace(MAP_EXAMPLE, WEB_LOOKUPS_OFF);
+export const CODE_WORK_INSTRUCTIONS_VISUAL_ONLY = rewrite(CODE_WORK_INSTRUCTIONS, VISUAL_ONLY_CODE_WORK_EDITS);
+
+/** The configure section for a session, from the two settings that shape it. */
+export function agentInstructions(style: InteractionStyle, webLookups: boolean): string {
+  if (style === "visual-only") return webLookups ? AGENT_INSTRUCTIONS_VISUAL_ONLY : AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF;
+  return webLookups ? AGENT_INSTRUCTIONS : AGENT_INSTRUCTIONS_WEB_OFF;
+}
+
+export function codeWorkInstructions(style: InteractionStyle): string {
+  return style === "visual-only" ? CODE_WORK_INSTRUCTIONS_VISUAL_ONLY : CODE_WORK_INSTRUCTIONS;
+}

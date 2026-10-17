@@ -3,8 +3,15 @@ import { ACTIONS, COMPONENTS } from "./core/catalog";
 import { collectLoads, compile, dataKey, evaluate, formatDiagnostics, initialState, type LoadedData } from "./core";
 import {
   AGENT_INSTRUCTIONS,
+  AGENT_INSTRUCTIONS_VISUAL_ONLY,
+  AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF,
   AGENT_INSTRUCTIONS_WEB_OFF,
+  agentInstructions,
   CODE_WORK_INSTRUCTIONS,
+  CODE_WORK_INSTRUCTIONS_VISUAL_ONLY,
+  codeWorkInstructions,
+  INSTRUCTION_SETTINGS,
+  parseInteractionStyle,
   UI_REFERENCE,
   UI_REFERENCE_MORE,
   WEB_LOOKUPS_OFF,
@@ -17,6 +24,9 @@ describe("agent instructions", () => {
     expect(AGENT_INSTRUCTIONS.length).toBeLessThanOrEqual(4096);
     expect(AGENT_INSTRUCTIONS_WEB_OFF.length).toBeLessThanOrEqual(4096);
     expect(CODE_WORK_INSTRUCTIONS.length).toBeLessThanOrEqual(4096);
+    expect(AGENT_INSTRUCTIONS_VISUAL_ONLY.length).toBeLessThanOrEqual(4096);
+    expect(AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF.length).toBeLessThanOrEqual(4096);
+    expect(CODE_WORK_INSTRUCTIONS_VISUAL_ONLY.length).toBeLessThanOrEqual(4096);
     expect(UI_REFERENCE.length).toBeLessThanOrEqual(4096);
     expect(UI_REFERENCE_MORE.length).toBeLessThanOrEqual(4096);
   });
@@ -25,6 +35,8 @@ describe("agent instructions", () => {
   it("swap the Map example for the off note while web lookups are off", () => {
     expect(AGENT_INSTRUCTIONS_WEB_OFF).toContain(WEB_LOOKUPS_OFF);
     expect(AGENT_INSTRUCTIONS_WEB_OFF).not.toContain("Map(");
+    expect(AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF).toContain(WEB_LOOKUPS_OFF);
+    expect(AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF).not.toContain("Map(");
   });
 
   // The Evidence group's signatures ride on the code-work section, which every session that gets the references also gets.
@@ -36,7 +48,7 @@ describe("agent instructions", () => {
   });
 
   it("carry examples that compile and render without errors", () => {
-    const examples = [...`${AGENT_INSTRUCTIONS}\n${CODE_WORK_INSTRUCTIONS}`.matchAll(/```ui\n([\s\S]*?)\n```/g)].map((match) => match[1]);
+    const examples = [...`${AGENT_INSTRUCTIONS}\n${CODE_WORK_INSTRUCTIONS}\n${AGENT_INSTRUCTIONS_VISUAL_ONLY}\n${CODE_WORK_INSTRUCTIONS_VISUAL_ONLY}`.matchAll(/```ui\n([\s\S]*?)\n```/g)].map((match) => match[1]);
     expect(examples.length).toBeGreaterThan(3);
     for (const example of examples) {
       const compiled = compile(example);
@@ -46,6 +58,47 @@ describe("agent instructions", () => {
       const data = new Map<string, LoadedData>(collectLoads(program).map((request) => [dataKey(request), { ok: true, value: [] }]));
       const { diagnostics } = evaluate(program, initialState(program, data), data);
       expect(diagnostics, example).toEqual([]);
+    }
+  });
+});
+
+describe("interactionStyle", () => {
+  it("defaults to proactive, the upstream instructions unchanged", () => {
+    expect(INSTRUCTION_SETTINGS.interactionStyle.default).toBe("proactive");
+    expect(INSTRUCTION_SETTINGS.interactionStyle.options).toEqual(["proactive", "visual-only"]);
+    expect(parseInteractionStyle("proactive")).toBe("proactive");
+    expect(parseInteractionStyle("anything else")).toBe("proactive");
+    expect(agentInstructions("proactive", true)).toBe(AGENT_INSTRUCTIONS);
+    expect(agentInstructions("proactive", false)).toBe(AGENT_INSTRUCTIONS_WEB_OFF);
+    expect(codeWorkInstructions("proactive")).toBe(CODE_WORK_INSTRUCTIONS);
+  });
+
+  it("visual-only picks its own sections", () => {
+    expect(parseInteractionStyle("visual-only")).toBe("visual-only");
+    expect(agentInstructions("visual-only", true)).toBe(AGENT_INSTRUCTIONS_VISUAL_ONLY);
+    expect(agentInstructions("visual-only", false)).toBe(AGENT_INSTRUCTIONS_VISUAL_ONLY_WEB_OFF);
+    expect(codeWorkInstructions("visual-only")).toBe(CODE_WORK_INSTRUCTIONS_VISUAL_ONLY);
+  });
+
+  it("visual-only drops the default nudges toward questions and approvals", () => {
+    const text = `${AGENT_INSTRUCTIONS_VISUAL_ONLY}\n${CODE_WORK_INSTRUCTIONS_VISUAL_ONLY}`;
+    expect(text).not.toContain("end with FollowUps");
+    expect(text).not.toContain("To let the user pick, give buttons");
+    expect(text).not.toContain("picture options → OptionCards");
+    expect(text).not.toContain("or you want approval) → Plan");
+    const examples = [...text.matchAll(/```ui\n([\s\S]*?)\n```/g)].map((match) => match[1]).join("\n");
+    for (const name of ["FollowUps", "Button", "Form", "Choice", "Radio", "Checklist", "OptionCards", "Decision", "Plan"]) {
+      expect(examples, name).not.toContain(`${name}(`);
+    }
+  });
+
+  it("visual-only keeps the visualization guidance and asks only when blocked", () => {
+    expect(AGENT_INSTRUCTIONS_VISUAL_ONLY).toContain("Write ```ui instead of a markdown table");
+    expect(AGENT_INSTRUCTIONS_VISUAL_ONLY).toContain("Ask only when you can't continue without the user's answer or approval");
+    expect(AGENT_INSTRUCTIONS_VISUAL_ONLY).toContain("Before you send a reply: any markdown table");
+    expect(CODE_WORK_INSTRUCTIONS_VISUAL_ONLY).toContain("only when the user asked for one or you need their approval");
+    for (const name of ["Tests", "Logs", "Findings", "Coverage", "Changes", "Estimate", "Diagram", "Steps"]) {
+      expect(`${AGENT_INSTRUCTIONS_VISUAL_ONLY}\n${CODE_WORK_INSTRUCTIONS_VISUAL_ONLY}`, name).toContain(name);
     }
   });
 });

@@ -10,6 +10,8 @@
 
 </div>
 
+> **Fork notice.** This is leanrails-inc's modified fork of [ComicBit/bb-plugin-genui](https://github.com/ComicBit/bb-plugin-genui) (Apache-2.0). Change: an `interactionStyle` setting (`proactive`, the upstream default, or `visual-only`), in `instructions.ts`, `server.ts`, `instructions.test.ts`, this README and `docs/architecture.md`. Install the fork with `bb plugin install git:https://github.com/leanrails-inc/bb-plugin-genui.git@main --yes`.
+
 ---
 
 Agents in BB answer in markdown: a table for a comparison, a numbered list for a plan, a wall of pasted output after a test run. With this plugin they answer with the component the content calls for, and you can use it. Drag a slider and the numbers recompute. Click a box in a diagram to read about it. Pick an option and your choice goes back to the agent as your next message.
@@ -103,6 +105,14 @@ To try it, ask an agent something with a shape: *"Compare Postgres, SQLite and D
 bb genui ask "Plan a two-day trip to Lisbon"
 ```
 
+Agents offer buttons, forms and follow-up questions on their own by default. If you want the visuals without the prompts, switch the *Interaction style* setting to `visual-only`:
+
+```sh
+bb plugin config genui set interactionStyle visual-only
+```
+
+Agents then still show tables, charts, diagrams and reports as UI, but use FollowUps, Button, Form, Choice, Radio, Checklist, OptionCards, Decision and Plan only when they need your answer or approval before they can continue. Sessions started after the change pick it up.
+
 ## What it costs, and what it touches
 
 - **Tokens.** Sessions whose replies you read get about 16 KB of instructions (roughly 4,000 tokens) that teach the components. Worker threads that another agent spawns get none. A UI costs no extra model call: it is part of the reply.
@@ -130,4 +140,4 @@ bb plugin build && bb plugin install .   # then, after changes: bb plugin reload
 
 ## License
 
-[Apache-2.0](LICENSE). The diagram font, Excalifont, is under the SIL Open Font License ([assets/fonts/Excalifont-OFL.txt](assets/fonts/Excalifont-OFL.txt)). Every image in `gallery/` was drawn or rendered for this project.
+[Apache-2.0](LICENSE). This fork modifies the original work by ComicBit; see the fork notice at the top. The diagram font, Excalifont, is under the SIL Open Font License ([assets/fonts/Excalifont-OFL.txt](assets/fonts/Excalifont-OFL.txt)). Every image in `gallery/` was drawn or rendered for this project.
